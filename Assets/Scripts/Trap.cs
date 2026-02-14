@@ -2,44 +2,29 @@ using UnityEngine;
 
 public class Trap : MonoBehaviour
 {
-    [Header("Trap Settings")]
-    [SerializeField] private TrapType trapType = TrapType.Spike;
-    [SerializeField] private float damageDelay = 0f;
+    [Header("Animation Settings")]
+    [SerializeField] private float triggerInterval = 2f;
+    [SerializeField] private string triggerName = "Activate";
 
-    [Header("Animation (for moving traps)")]
-    [SerializeField] private bool isAnimated = false;
-    [SerializeField] private Vector3 moveDirection = Vector3.up;
-    [SerializeField] private float moveDistance = 1f;
-    [SerializeField] private float moveSpeed = 2f;
-
-    public enum TrapType
-    {
-        Spike,
-        Lava,
-        MovingPlatform
-    }
-
-    private Vector3 startPosition;
-    private float moveProgress = 0f;
+    private Animator animator;
+    private float timer;
 
     private void Start()
     {
-        startPosition = transform.position;
+        animator = GetComponent<Animator>();
+        timer = triggerInterval;
     }
 
     private void Update()
     {
-        if (isAnimated)
-        {
-            AnimateTrap();
-        }
-    }
+        if (animator == null) return;
 
-    private void AnimateTrap()
-    {
-        moveProgress += Time.deltaTime * moveSpeed;
-        float offset = Mathf.Sin(moveProgress) * moveDistance;
-        transform.position = startPosition + moveDirection.normalized * offset;
+        timer -= Time.deltaTime;
+        if (timer <= 0f)
+        {
+            animator.SetTrigger(triggerName);
+            timer = triggerInterval;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -47,36 +32,13 @@ public class Trap : MonoBehaviour
         var player = other.GetComponent<PlayerController>();
         if (player != null && !player.IsDead)
         {
-            if (damageDelay > 0)
-            {
-                StartCoroutine(DelayedDamage(player));
-            }
-            else
-            {
-                player.Die();
-            }
+            player.Die();
         }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
         var player = collision.gameObject.GetComponent<PlayerController>();
-        if (player != null && !player.IsDead)
-        {
-            if (damageDelay > 0)
-            {
-                StartCoroutine(DelayedDamage(player));
-            }
-            else
-            {
-                player.Die();
-            }
-        }
-    }
-
-    private System.Collections.IEnumerator DelayedDamage(PlayerController player)
-    {
-        yield return new WaitForSeconds(damageDelay);
         if (player != null && !player.IsDead)
         {
             player.Die();

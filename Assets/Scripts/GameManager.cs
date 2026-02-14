@@ -101,19 +101,6 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    public void RespawnPlayer()
-    {
-        if (player != null && spawnPoint != null)
-        {
-            player.Respawn(spawnPoint.position);
-
-            if (gameOverUI != null)
-            {
-                gameOverUI.SetActive(false);
-            }
-        }
-    }
-
     public int Score => score;
     public int TotalCollectibles => totalCollectibles;
 }

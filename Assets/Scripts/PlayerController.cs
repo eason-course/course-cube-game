@@ -16,8 +16,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float riseMultiplier = 5f;
     [SerializeField] private float fallMultiplier = 8f;
 
+    [Header("Death Settings")]
+    [SerializeField] private GameObject deathParticlePrefab;
+    [SerializeField] private float particleLifetime = 2f;
+    [SerializeField] private float fallDeathY = -100f;
+    [SerializeField] private AudioClip deathSound;
+    [SerializeField] private float invincibilityTime = 0.1f;
+
     private Rigidbody rb;
     private Vector3 movement;
+    private Vector3 spawnPosition;
     private bool isDead = false;
     private bool isGrounded = false;
 
@@ -33,11 +41,21 @@ public class PlayerController : MonoBehaviour
 
         // Lock rotation so the cube doesn't tumble, allow gravity (Y axis free)
         rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        // Record spawn position
+        spawnPosition = transform.position;
     }
 
     private void Update()
     {
         if (isDead) return;
+
+        // Fall death check
+        if (transform.position.y < fallDeathY)
+        {
+            Die();
+            return;
+        }
 
         // Ground check
         isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
@@ -115,39 +133,32 @@ public class PlayerController : MonoBehaviour
         if (isDead) return;
 
         isDead = true;
-        rb.linearVelocity = Vector3.zero;
+
+        // Spawn death particle effect
+        if (deathParticlePrefab != null)
+        {
+            GameObject particles = Instantiate(deathParticlePrefab, transform.position, Quaternion.identity);
+            Destroy(particles, particleLifetime);
+        }
+
+        // Play death sound
+        if (deathSound != null)
+        {
+            AudioSource.PlayClipAtPoint(deathSound, transform.position);
+        }
 
         OnPlayerDeath?.Invoke();
 
-        // Visual feedback - make player red and shrink
-        GetComponent<Renderer>()?.material.SetColor("_Color", Color.red);
-        StartCoroutine(DeathAnimation());
+        // Respawn at start position
+        transform.position = spawnPosition;
+        rb.linearVelocity = Vector3.zero;
+
+        Invoke(nameof(ResetDead), invincibilityTime);
     }
 
-    private System.Collections.IEnumerator DeathAnimation()
-    {
-        float duration = 0.5f;
-        float elapsed = 0f;
-        Vector3 originalScale = transform.localScale;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t);
-            yield return null;
-        }
-
-        gameObject.SetActive(false);
-    }
-
-    public void Respawn(Vector3 position)
+    private void ResetDead()
     {
         isDead = false;
-        transform.position = position;
-        transform.localScale = Vector3.one;
-        GetComponent<Renderer>()?.material.SetColor("_Color", Color.white);
-        gameObject.SetActive(true);
     }
 
     public bool IsDead => isDead;

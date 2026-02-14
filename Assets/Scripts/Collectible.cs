@@ -11,6 +11,9 @@ public class Collectible : MonoBehaviour
     [SerializeField] private GameObject collectParticlePrefab;
     [SerializeField] private float particleLifetime = 2f;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioClip collectSound;
+
     public static event System.Action<Collectible> OnCollected;
 
     private Vector3 startPosition;
@@ -45,6 +48,12 @@ public class Collectible : MonoBehaviour
         {
             GameObject particles = Instantiate(collectParticlePrefab, transform.position, Quaternion.identity);
             Destroy(particles, particleLifetime);
+        }
+
+        // Play sound
+        if (collectSound != null)
+        {
+            AudioSource.PlayClipAtPoint(collectSound, transform.position);
         }
 
         OnCollected?.Invoke(this);
